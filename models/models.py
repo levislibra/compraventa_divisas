@@ -10,6 +10,7 @@ from openerp.tools.translate import _
 class compraventa_divisas(models.Model):
 	_name = 'compraventa.divisas'
 
+	_order = 'id desc'
 	name = fields.Char('Nombre mostrado')
 	date = fields.Date('Fecha', required=True, default=lambda *a: time.strftime('%Y-%m-%d'))
 	journal_id = fields.Many2one('account.journal', "Metodo de pago")
