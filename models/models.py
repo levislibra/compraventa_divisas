@@ -20,7 +20,7 @@ class compraventa_divisas(models.Model):
 	rate = fields.Float('Tasa de cambio')
 	communication = fields.Char('Circular')
 	partner_id = fields.Many2one('res.partner', 'Cliente')
-	state = fields.Selection([('borrador', 'Borrador'), ('publicado', 'Publicado')], default='borrador', readonly=True, string='Estado')
+	state = fields.Selection([('borrador', 'Borrador'), ('publicado', 'Publicado'), ('cancelado', 'Cancelado')], default='borrador', readonly=True, string='Estado')
 	move_id = fields.Many2one('account.move', 'Asiento del pago')
 	destination_move_id = fields.Many2one('account.move', 'Asiento del cobro')
 
@@ -37,7 +37,6 @@ class compraventa_divisas(models.Model):
 
 	@api.one
 	def confirmar(self):
-		print "Confirm//////////*********"
 		currency_id = self.env.user.company_id.currency_id.id
 		transfer_account_id = self.env.user.company_id.transfer_account_id
 		aml_ids = []
@@ -128,3 +127,12 @@ class compraventa_divisas(models.Model):
 			new_move_id = self.env['account.move'].create(am_values)
 			new_move_id.post()
 			self.destination_move_id = new_move_id.id
+			self.state = 'publicado'
+
+	@api.one
+	def cancelar(self):
+		self.move_id.button_cancel()
+		self.move_id.unlink()
+		self.destination_move_id.button_cancel()
+		self.destination_move_id.unlink()
+		self.state = 'cancelado'
