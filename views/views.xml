@@ -65,7 +65,7 @@
 
     <!-- Top menu item -->
 
-    <menuitem name="Compra-Venta Divisas" id="menu_compraventa"/>
+    <menuitem name="Compra-Venta Divisas" id="menu_compraventa" web_icon="compraventa_divisas,static/description/icon.png"/>
 
     <!-- menu categories -->
 
