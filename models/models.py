@@ -19,6 +19,7 @@ class compraventa_divisas(models.Model):
 	operation_type = fields.Selection([('compra', 'Compra'), ('venta', 'Venta')], default='compra', string='Operacion')
 	currency_id = fields.Many2one('res.currency', 'Divisa')
 	rate = fields.Float('Tasa de cambio')
+	result = fields.Float('Resultado', compute="_compute_result")
 	communication = fields.Char('Circular')
 	partner_id = fields.Many2one('res.partner', 'Cliente')
 	state = fields.Selection([('borrador', 'Borrador'), ('publicado', 'Publicado'), ('cancelado', 'Cancelado')], default='borrador', readonly=True, string='Estado')
@@ -37,25 +38,28 @@ class compraventa_divisas(models.Model):
 		return rec
 
 	@api.one
+	@api.onchange('amount', 'rate')
+	def _compute_result(self):
+		self.result = self.amount * self.rate
+
+	@api.one
 	def confirmar(self):
 		currency_id = self.env.user.company_id.currency_id.id
 		transfer_account_id = self.env.user.company_id.transfer_account_id
 		aml_ids = []
-		communication = None
-		if self.communication:
-			communication = self.communication
+
+		name_account_move_line = None
+		if self.operation_type == 'compra':
+			name_account_move_line = 'Compra de '
 		else:
-			if self.operation_type == 'compra':
-				communication = 'Compra de '
-			else:
-				communication = 'Venta de '
-			communication += self.currency_id.name + ' ' + str(self.amount) + ' x ' + str(self.rate)
+			name_account_move_line = 'Venta de '
+		name_account_move_line += self.currency_id.name + ' ' + str(self.amount) + ' x ' + str(self.rate)
 
 		if True:
 			# Metodo de pago
 			# Aqui registramos la salida de caja correspondiente
 			aml = {
-			    'name': communication,
+			    'name': name_account_move_line,
 			    'account_id': self.journal_id.default_debit_account_id.id,
 			    'journal_id': self.journal_id.id,
 			    'date': self.date,
@@ -67,7 +71,7 @@ class compraventa_divisas(models.Model):
 			aml_ids.append((0,0,aml))
 			# Transferimos momentaneamente a cuenta interna
 			aml2 = {
-			    'name': communication,
+			    'name': name_account_move_line,
 			    'account_id': transfer_account_id.id,
 			    'journal_id': self.journal_id.id,
 			    'date': self.date,
@@ -82,7 +86,8 @@ class compraventa_divisas(models.Model):
 			    'journal_id': self.journal_id.id,
 			    'partner_id': self.partner_id.id,
 			    'state': 'draft',
-			    'name': 'COMPRA-VENTA/PAGO/'+str(self.id),
+			    'ref': self.communication,
+			    #'name': 'COMPRA-VENTA/PAGO/'+str(self.id),
 			    'date': self.date,
 			    'line_ids': aml_ids,
 			}
@@ -94,7 +99,7 @@ class compraventa_divisas(models.Model):
 			# Destino
 			# Aqui registramos el ingreso a la caja correspondiente
 			aml = {
-			    'name': communication,
+			    'name': name_account_move_line,
 			    'account_id': self.destination_journal_id.default_debit_account_id.id,
 			    'journal_id': self.destination_journal_id.id,
 			    'date': self.date,
@@ -106,7 +111,7 @@ class compraventa_divisas(models.Model):
 			aml_ids.append((0,0,aml))
 			# Saldamos la cuenta interna
 			aml2 = {
-			    'name': communication,
+			    'name': name_account_move_line,
 			    'account_id': transfer_account_id.id,
 			    'journal_id': self.destination_journal_id.id,
 			    'date': self.date,
@@ -121,7 +126,8 @@ class compraventa_divisas(models.Model):
 			    'journal_id': self.destination_journal_id.id,
 			    'partner_id': self.partner_id.id,
 			    'state': 'draft',
-			    'name': 'COMPRA-VENTA/COBRO/'+str(self.id),
+			    'ref': self.communication,
+			    #'name': 'COMPRA-VENTA/COBRO/'+str(self.id),
 			    'date': self.date,
 			    'line_ids': aml_ids,
 			}

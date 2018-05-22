@@ -38,6 +38,7 @@
                 <field name="currency_id" required="1" attrs="{'readonly': [('state', '!=', 'borrador')]}" domain="[('active', '=', True)]" options="{'no_quick_create':True,'no_create_edit':True}"/>
                 <field name="amount" required="1" attrs="{'readonly': [('state', '!=', 'borrador')]}"/>
                 <field name="rate" required="1" attrs="{'readonly': [('state', '!=', 'borrador')]}"/>
+                <field name="result"/>
                 <field name="journal_id" required="1" attrs="{'readonly': [('state', '!=', 'borrador')]}"/>
                 <field name="destination_journal_id" required="1" attrs="{'readonly': [('state', '!=', 'borrador')]}"/>
                 <field name="move_id" class="oe_read_only"/>
